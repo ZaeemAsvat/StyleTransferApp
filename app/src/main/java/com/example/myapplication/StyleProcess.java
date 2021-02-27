@@ -2,6 +2,7 @@ package com.example.myapplication;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -17,6 +18,7 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+
 
 enum StyleCategory {
     CUSTOM,
@@ -37,6 +39,7 @@ public class StyleProcess extends AppCompatActivity {
     LinearLayout displayStyleCategories;
     LinearLayout displayStyleImages;
     ImageView displayImageView;
+    Bitmap sourceImage;
 
     HashMap<StyleCategory, ArrayList<Integer>> styleMap; // style category-image mappings
 
@@ -55,6 +58,7 @@ public class StyleProcess extends AppCompatActivity {
             final Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
             // display selected image
             displayImageView.setImageBitmap(selectedImage);
+            sourceImage = ((BitmapDrawable) displayImageView.getDrawable()).getBitmap();
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -214,7 +218,7 @@ public class StyleProcess extends AppCompatActivity {
 
                     // add images to 'display' layout for this category
                     for (int styleImageId : styleMap.get(styleCategory)) {
-                        ImageView styleImageView = new ImageView(getBaseContext());
+                        final ImageView styleImageView = new ImageView(getBaseContext());
                         styleImageView.setScaleType(ImageView.ScaleType.FIT_XY);
                         styleImageView.setImageResource(styleImageId);
                         styleImageView.setClickable(true);
@@ -222,6 +226,19 @@ public class StyleProcess extends AppCompatActivity {
                         params.setMargins(1, 0, 1, 0);
                         styleImageView.setLayoutParams(params);
                         displayStyleImages.addView(styleImageView);
+
+                        // apply style to source image on select
+                        styleImageView.setClickable(true);
+                        styleImageView.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                Bitmap sourceImage = ((BitmapDrawable) displayImageView.getDrawable()).getBitmap();
+                                Bitmap targetImage = ((BitmapDrawable) styleImageView.getDrawable()).getBitmap();
+                                HistogramMatchingStyleTransfer styleTransfer = new HistogramMatchingStyleTransfer(sourceImage, targetImage);
+                                Bitmap styledImage = styleTransfer.styleImage();
+                                displayImageView.setImageBitmap(styledImage);
+                            }
+                        });
 
                     }
                 }
